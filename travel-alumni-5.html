@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Travel Explorer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for aesthetic enhancements */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc; /* Light blue-gray background */
+        }
+        .trip-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .trip-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .filter-tile {
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .filter-tile:hover:not(.active) {
+            background-color: #fee2e2; /* Light red hover */
+            transform: scale(1.03);
+        }
+        .filter-tile.active {
+            background-color: #ef4444; /* Red for active state */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+            font-weight: 600;
+        }
+        /* Hide scrollbar for aesthetics on tile container */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="p-4 sm:p-8 max-w-7xl mx-auto">
+
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Alumni Travel Explorer</h1>
+            <p class="text-lg text-gray-600">Discover and filter trips chronologically by region or starting month.</p>
+        </header>
+
+        <!-- Region Tiles (Horizontal Scrollable) -->
+        <div id="region-tiles" class="flex flex-nowrap space-x-3 overflow-x-scroll no-scrollbar py-3 mb-6 border-b-2 border-red-100">
+            <!-- Tiles will be rendered here by JS -->
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-10 p-4 bg-white rounded-xl shadow-lg border border-gray-100">
+            
+            <div class="flex-1">
+                <label for="regionFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Region</label>
+                <select id="regionFilter" onchange="applyFilters()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150">
+                    <option value="all">All Regions</option>
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div class="flex-1">
+                <label for="monthFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Start Month</label>
+                <select id="monthFilter" onchange="applyFilters()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150">
+                    <option value="all">All Months</option>
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div class="sm:self-end">
+                <button onclick="clearFilters()" class="w-full sm:w-auto mt-4 sm:mt-0 px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-150 ease-in-out">
+                    <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Trip Cards Container -->
+        <div id="trip-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Cards will be rendered here -->
+            <p id="no-trips-message" class="text-center text-gray-500 col-span-full hidden mt-10 p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                <span class="font-bold text-lg text-yellow-700">Oops!</span> No trips match the current filter criteria. Please try adjusting your selections.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- MOCK DATA FOR DEMONSTRATION ---
+        const tripsData = [
+            { id: 1, title: "Antarctic Peninsula Voyage", source: "Harvard", startDate: "2025-01-15", endDate: "2025-01-26", region: "Polar", startMonth: "January", duration: "12 days", price: "$18,500", details: "A grand voyage across the Drake Passage to the stunning White Continent." },
+            { id: 2, title: "Wonders of Southeast Asia", source: "Stanford", startDate: "2025-02-01", endDate: "2025-02-14", region: "Asia", startMonth: "February", duration: "14 days", price: "$9,200", details: "Explore the temples and floating markets of Vietnam and Cambodia." },
+            { id: 3, title: "The Grand Danube Passage", source: "Harvard", startDate: "2025-04-03", endDate: "2025-04-18", region: "Europe", startMonth: "April", duration: "16 days", price: "$7,850", details: "River cruise through eight countries from Budapest to the Black Sea." },
+            { id: 4, title: "Japan's Cultural Landscapes", source: "Stanford", startDate: "2025-04-20", endDate: "2025-05-02", region: "Asia", startMonth: "April", duration: "13 days", price: "$12,150", details: "From Tokyo's bustle to Kyoto's serene gardens and temples." },
+            { id: 5, title: "Ancient Greece & Istanbul Voyage", source: "Stanford", startDate: "2025-06-05", endDate: "2025-06-18", region: "Europe", startMonth: "June", duration: "14 days", price: "$14,995", details: "Sail the Aegean Sea and discover classical archaeological sites." },
+            { id: 6, title: "Wildlife of the Galápagos Islands", source: "Harvard", startDate: "2025-07-10", endDate: "2025-07-17", region: "South America", startMonth: "July", duration: "8 days", price: "$11,500", details: "Up-close encounters with unique species only found here." },
+            { id: 7, title: "Arctic Circle Exploration", source: "Stanford", startDate: "2025-07-25", endDate: "2025-08-07", region: "Polar", startMonth: "July", duration: "14 days", price: "$16,300", details: "Search for polar bears and explore the rugged landscapes of Svalbard." },
+            { id: 8, title: "Safari in Tanzania", source: "Harvard", startDate: "2025-09-01", endDate: "2025-09-12", region: "Africa", startMonth: "September", duration: "12 days", price: "$13,950", details: "Witness the Great Migration in the Serengeti and Ngorongoro Crater." },
+            { id: 9, title: "Morocco: Imperial Cities", source: "Stanford", startDate: "2025-10-15", endDate: "2025-10-25", region: "Africa", startMonth: "October", duration: "11 days", price: "$6,500", details: "Discover the vibrant culture of Marrakesh, Fes, and the Atlas Mountains." },
+            { id: 10, title: "Patagonia by Land and Sea", source: "Harvard", startDate: "2025-11-20", endDate: "2025-12-05", region: "South America", startMonth: "November", duration: "16 days", price: "$10,750", details: "Glaciers, peaks, and vast plains of the world's end." },
+            { id: 11, title: "Christmas Markets of Germany", source: "Stanford", startDate: "2025-12-04", endDate: "2025-12-11", region: "Europe", startMonth: "December", duration: "8 days", price: "$5,200", details: "A festive river cruise enjoying the holiday spirit." },
+        ];
+
+        // Global state for active tile filter
+        let activeRegionTile = 'all';
+
+        /**
+         * Converts ISO date string (YYYY-MM-DD) to a readable format (Mon DD, YYYY).
+         * @param {string} dateString
+         * @returns {string}
+         */
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        /**
+         * Renders the interactive region tiles at the top.
+         */
+        function renderTiles() {
+            const tileContainer = document.getElementById('region-tiles');
+            tileContainer.innerHTML = '';
+            
+            // Get unique regions, including 'All'
+            const regions = ['All', ...new Set(tripsData.map(trip => trip.region))].sort();
+
+            regions.forEach(region => {
+                const tile = document.createElement('button');
+                const regionId = region.toLowerCase().replace(/ /g, '-');
+                const isActive = activeRegionTile === regionId;
+                
+                tile.id = `tile-${regionId}`;
+                tile.textContent = region;
+                tile.className = `filter-tile px-4 py-2 text-sm rounded-full whitespace-nowrap border-2 border-transparent transition duration-200 ${
+                    isActive ? 'active' : 'bg-white text-gray-700 border-gray-200 hover:border-red-300'
+                }`;
+                tile.onclick = () => filterByTile(regionId);
+                
+                tileContainer.appendChild(tile);
+            });
+        }
+        
+        /**
+         * Handles filtering when a region tile is clicked.
+         * @param {string} regionId - The ID of the region/tile clicked.
+         */
+        function filterByTile(regionId) {
+            // If the active tile is clicked again, toggle it off
+            if (activeRegionTile === regionId && regionId !== 'all') {
+                activeRegionTile = 'all';
+            } else {
+                activeRegionTile = regionId;
+            }
+            
+            // Update the main dropdown to reflect the tile selection
+            const regionFilter = document.getElementById('regionFilter');
+            
+            // Find the actual region name for the dropdown value
+            const selectedRegionName = tripsData.find(t => t.region.toLowerCase().replace(/ /g, '-') === activeRegionTile)?.region;
+            
+            regionFilter.value = activeRegionTile === 'all' ? 'all' : selectedRegionName || 'all';
+
+            // Re-render tiles to update active class
+            renderTiles();
+            
+            // Apply the new filter state
+            applyFilters();
+        }
+
+        /**
+         * Populates the Region and Month dropdown filters.
+         */
+        function renderFilters() {
+            const regionFilter = document.getElementById('regionFilter');
+            const monthFilter = document.getElementById('monthFilter');
+
+            // Clear previous options (except 'All')
+            regionFilter.innerHTML = '<option value="all">All Regions</option>';
+            monthFilter.innerHTML = '<option value="all">All Months</option>';
+
+            // Populate Region filter
+            const regions = [...new Set(tripsData.map(trip => trip.region))].sort();
+            regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                regionFilter.appendChild(option);
+            });
+
+            // Populate Month filter (based on startMonth)
+            const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const uniqueMonths = [...new Set(tripsData.map(trip => trip.startMonth))];
+            
+            // Sort months correctly
+            uniqueMonths.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+
+            uniqueMonths.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthFilter.appendChild(option);
+            });
+        }
+
+        /**
+         * Filters and sorts the trip data based on current selections and renders the cards.
+         */
+        function applyFilters() {
+            const regionFilterDropdownValue = document.getElementById('regionFilter').value;
+            const monthFilterValue = document.getElementById('monthFilter').value;
+            const cardContainer = document.getElementById('trip-cards-container');
+            const noTripsMessage = document.getElementById('no-trips-message');
+
+            let filteredTrips = tripsData;
+            
+            // Determine the active region filter (dropdown takes precedence if not 'all')
+            let finalRegionFilter = regionFilterDropdownValue;
+
+            if (finalRegionFilter === 'all' && activeRegionTile !== 'all') {
+                 // Convert active tile ID back to the full region name
+                 finalRegionFilter = tripsData.find(t => t.region.toLowerCase().replace(/ /g, '-') === activeRegionTile)?.region || 'all';
+                 
+                 // If the dropdown is 'all' but a tile is selected, update the dropdown
+                 document.getElementById('regionFilter').value = finalRegionFilter;
+            } else if (regionFilterDropdownValue !== 'all') {
+                // If dropdown is explicitly set, override the tile state
+                activeRegionTile = finalRegionFilter.toLowerCase().replace(/ /g, '-');
+            } else if (regionFilterDropdownValue === 'all' && activeRegionTile !== 'all') {
+                 // Keep the tile filter if dropdown is reset to 'all' but a tile is still active
+                 finalRegionFilter = tripsData.find(t => t.region.toLowerCase().replace(/ /g, '-') === activeRegionTile)?.region || 'all';
+            } else {
+                // Both are 'all'
+                activeRegionTile = 'all';
+            }
+
+
+            // 1. Filter by Region
+            if (finalRegionFilter !== 'all') {
+                filteredTrips = filteredTrips.filter(trip => trip.region === finalRegionFilter);
+            }
+            
+            // 2. Filter by Month
+            if (monthFilterValue !== 'all') {
+                filteredTrips = filteredTrips.filter(trip => trip.startMonth === monthFilterValue);
+            }
+
+            // 3. Chronological Sort (MANDATORY)
+            filteredTrips.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+            // 4. Render
+            renderCards(filteredTrips);
+            renderTiles(); // Re-render tiles to ensure active state is correct
+
+            // Toggle no results message
+            if (filteredTrips.length === 0) {
+                noTripsMessage.classList.remove('hidden');
+            } else {
+                noTripsMessage.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Resets all filters to 'All' and rerenders.
+         */
+        function clearFilters() {
+            document.getElementById('regionFilter').value = 'all';
+            document.getElementById('monthFilter').value = 'all';
+            activeRegionTile = 'all'; // Reset tile state
+            
+            renderTiles(); // Re-render tiles to reflect 'All' state
+            applyFilters();
+        }
+
+        /**
+         * Generates the HTML card structure for the filtered trips.
+         * @param {Array<Object>} trips - The array of trip objects.
+         */
+        function renderCards(trips) {
+            const container = document.getElementById('trip-cards-container');
+            container.innerHTML = trips.map(trip => `
+                <div class="trip-card bg-white p-6 rounded-xl shadow-xl border-t-8 ${trip.source === 'Stanford' ? 'border-red-500' : 'border-blue-500'} flex flex-col justify-between">
+                    <div>
+                        <span class="inline-flex items-center px-3 py-1 text-xs font-bold rounded-full ${trip.source === 'Stanford' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'} mb-3 shadow-inner">
+                            Source: ${trip.source}
+                        </span>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3 leading-snug">${trip.title}</h3>
+                        <p class="text-gray-600 text-sm mb-4">${trip.details}</p>
+                    </div>
+
+                    <div class="space-y-3 mt-4 border-t border-gray-100 pt-4">
+                        <div class="flex items-center text-base text-gray-700">
+                            <!-- Calendar Icon -->
+                            <svg class="w-5 h-5 mr-3 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="font-semibold">Dates:</span> ${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}
+                        </div>
+                        <div class="flex items-center text-base text-gray-700">
+                            <!-- Map Pin Icon -->
+                            <svg class="w-5 h-5 mr-3 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span class="font-semibold">Region:</span> ${trip.region}
+                        </div>
+                        <div class="flex items-center text-base text-red-600 font-bold pt-3">
+                            <!-- Money Icon -->
+                            <svg class="w-6 h-6 mr-2 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.114-1.008 1.114-1.008 0-2m0 8c1.114 1.008 1.114 1.008 0 2m1-12.87c.725-.668 1.144-1.558 1.144-2.502 0-2.347-1.792-4.232-4-4.232C7.942 3.396 6.15 5.281 6.15 7.625c0 .944.419 1.834 1.144 2.502M12 21V3"></path></svg>
+                            ${trip.price}
+                            <span class="text-sm text-gray-500 ml-auto font-normal">(${trip.duration})</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // If no trips are found, hide the container grid
+            if (trips.length === 0) {
+                container.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Main initialization function
+         */
+        function init() {
+            renderFilters();
+            renderTiles();
+            // Initial call to display all trips, chronologically sorted
+            applyFilters(); 
+        }
+
+        // Initialize the app when the window loads
+        window.onload = init;
+    </script>
+
+</body>
+</html>
