@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stanford & Harvard Travel Study Trips</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .region-tiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .region-tile {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .region-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .region-tile.active {
+            border-color: #ffd700;
+            transform: translateY(-3px);
+        }
+        
+        .filters {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-group {
+            margin-bottom: 20px;
+        }
+        
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-tag {
+            background: #e9ecef;
+            border: 2px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .filter-tag:hover {
+            background: #dee2e6;
+        }
+        
+        .filter-tag.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        
+        .clear-filters {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        .clear-filters:hover {
+            background: #5a6268;
+        }
+        
+        .results-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .trips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .trip-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+        
+        .trip-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .trip-card.stanford {
+            border-left-color: #8c1515;
+        }
+        
+        .trip-card.harvard {
+            border-left-color: #a51c30;
+        }
+        
+        .trip-title {
+            color: #2c3e50;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .trip-institution {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            color: #666;
+        }
+        
+        .trip-details {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .detail-value {
+            color: #6c757d;
+        }
+        
+        .trip-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .trip-link:hover {
+            background: #0056b3;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .region-tiles {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .trips-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Stanford & Harvard Travel Study Trips</h1>
+            <p>Discover amazing educational travel opportunities</p>
+        </header>
+
+        <div class="loading" id="loadingMessage">
+            Loading trip data... This may take a moment as we fetch details from each trip page.
+        </div>
+
+        <div id="mainContent" style="display: none;">
+            <div class="region-tiles" id="regionTiles"></div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Filter by Region:</label>
+                    <div class="filter-tags" id="regionFilters"></div>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Filter by Start Month:</label>
+                    <div class="filter-tags" id="monthFilters"></div>
+                </div>
+                
+                <button class="clear-filters" onclick="clearAllFilters()">Clear All Filters</button>
+            </div>
+
+            <div class="results-info" id="resultsInfo"></div>
+            <div class="trips-grid" id="tripsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // CSV data embedded in the application
+        const csvData = `Trip Title (as on site),Institution,Official Trip URL
+Canada (Heli-hiking),Stanford,https://alumni.stanford.edu/travel-study/destinations/heli-2026
+India & Nepal,Stanford,https://alumni.stanford.edu/travel-study/destinations/india-2026
+Kyrgyzstan & Tajikistan,Stanford,https://alumni.stanford.edu/travel-study/destinations/central-asia-2026
+Morocco,Stanford,https://alumni.stanford.edu/travel-study/destinations/morocco-2026
+New Zealand Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/nz-walk-2026
+Scotland Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/scotland-walk-2026
+Sri Lanka,Stanford,https://alumni.stanford.edu/travel-study/destinations/sri-lanka-2026
+Turkey,Stanford,https://alumni.stanford.edu/travel-study/destinations/turkey-2026
+Amazon,Stanford,https://alumni.stanford.edu/travel-study/destinations/amazon-2025
+Botswana Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/botswana-walk-2025
+Chile Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/chile-walk-2025
+Christmas in Morocco,Stanford,https://alumni.stanford.edu/travel-study/destinations/morocco-christmas-2025
+Cuba,Stanford,https://alumni.stanford.edu/travel-study/destinations/cuba-2025
+Egypt & Jordan,Stanford,https://alumni.stanford.edu/travel-study/destinations/egypt-jordan-2025
+Galapagos,Stanford,https://alumni.stanford.edu/travel-study/destinations/galapagos-2025
+Greece Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/greece-walk-2025
+India (Rajasthan),Stanford,https://alumni.stanford.edu/travel-study/destinations/rajasthan-2025
+Israel & Palestine,Stanford,https://alumni.stanford.edu/travel-study/destinations/israel-palestine-2025
+Madagascar,Stanford,https://alumni.stanford.edu/travel-study/destinations/madagascar-2025
+Mexico,Stanford,https://alumni.stanford.edu/travel-study/destinations/mexico-2025
+Patagonia,Stanford,https://alumni.stanford.edu/travel-study/destinations/patagonia-2025
+Puglia,Stanford,https://alumni.stanford.edu/travel-study/destinations/puglia-2025
+Portugal Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/portugal-walk-2025
+Rocky Mountain Adventure,Stanford,https://alumni.stanford.edu/travel-study/destinations/rocky-mountain-2025
+Scandinavia,Stanford,https://alumni.stanford.edu/travel-study/destinations/scandinavia-2025
+Tasmania Walk,Stanford,https://alumni.stanford.edu/travel-study/destinations/tasmania-walk-2025
+Vietnam,Stanford,https://alumni.stanford.edu/travel-study/destinations/vietnam-2025
+Ancient Wonders in Egypt,Harvard,https://alumni.harvard.edu/travel/trips/ancient-wonders-egypt
+Japan: Spring Cherry Blossoms,Harvard,https://alumni.harvard.edu/travel/trips/japan-spring-cherry-blossoms-2025
+Christmas Markets of Central Europe,Harvard,https://alumni.harvard.edu/travel/trips/christmas-markets-central-europe
+Coast to Coast by Private Rail Car,Harvard,https://alumni.harvard.edu/travel/trips/coast-coast-private-rail-car
+Morocco: Imperial Cities and the Atlas,Harvard,https://alumni.harvard.edu/travel/trips/morocco-imperial-cities-and-atlas
+Northern India and Nepal,Harvard,https://alumni.harvard.edu/travel/trips/northern-india-and-nepal
+Patagonia: Journey to the End of the World,Harvard,https://alumni.harvard.edu/travel/trips/patagonia-journey-end-world
+Scotland: The Highlands and Islands,Harvard,https://alumni.harvard.edu/travel/trips/scotland-highlands-and-islands
+Sicily: Crossroads of the Mediterranean,Harvard,https://alumni.harvard.edu/travel/trips/sicily-crossroads-mediterranean
+South Africa: Cape Town and Safari,Harvard,https://alumni.harvard.edu/travel/trips/south-africa-cape-town-and-safari
+Turkey: Crossroads of Continents,Harvard,https://alumni.harvard.edu/travel/trips/turkey-crossroads-continents
+Vietnam and Cambodia,Harvard,https://alumni.harvard.edu/travel/trips/vietnam-and-cambodia
+Botswana Safari,Harvard,https://alumni.harvard.edu/travel/trips/botswana-safari
+Costa Rica: Pura Vida,Harvard,https://alumni.harvard.edu/travel/trips/costa-rica-pura-vida
+Croatia: Adriatic Jewels,Harvard,https://alumni.harvard.edu/travel/trips/croatia-adriatic-jewels
+Danube River Cruise,Harvard,https://alumni.harvard.edu/travel/trips/danube-river-cruise
+Greece: Classical Wonders,Harvard,https://alumni.harvard.edu/travel/trips/greece-classical-wonders
+Iceland: Fire and Ice,Harvard,https://alumni.harvard.edu/travel/trips/iceland-fire-and-ice
+Ireland: Emerald Isle,Harvard,https://alumni.harvard.edu/travel/trips/ireland-emerald-isle
+Italy: Hidden Gems of Puglia,Harvard,https://alumni.harvard.edu/travel/trips/italy-hidden-gems-puglia
+Jordan: Petra and Beyond,Harvard,https://alumni.harvard.edu/travel/trips/jordan-petra-and-beyond
+Kenya Safari,Harvard,https://alumni.harvard.edu/travel/trips/kenya-safari
+New Zealand: Natural Wonders,Harvard,https://alumni.harvard.edu/travel/trips/new-zealand-natural-wonders
+Norway: Land of the Midnight Sun,Harvard,https://alumni.harvard.edu/travel/trips/norway-land-midnight-sun
+Peru: Machu Picchu and Beyond,Harvard,https://alumni.harvard.edu/travel/trips/peru-machu-picchu-and-beyond
+Poland: From Krakow to Warsaw,Harvard,https://alumni.harvard.edu/travel/trips/poland-krakow-warsaw
+Portugal: From Lisbon to Porto,Harvard,https://alumni.harvard.edu/travel/trips/portugal-lisbon-porto
+Rhine River Cruise,Harvard,https://alumni.harvard.edu/travel/trips/rhine-river-cruise
+Tanzania Safari,Harvard,https://alumni.harvard.edu/travel/trips/tanzania-safari
+Thailand: Land of Smiles,Harvard,https://alumni.harvard.edu/travel/trips/thailand-land-smiles
+Tuscany: Heart of Italy,Harvard,https://alumni.harvard.edu/travel/trips/tuscany-heart-italy
+Uganda Gorilla Trek,Harvard,https://alumni.harvard.edu/travel/trips/uganda-gorilla-trek
+Uzbekistan: Silk Road Splendor,Harvard,https://alumni.harvard.edu/travel/trips/uzbekistan-silk-road-splendor`;
+
+        // Global variables
+        let allTrips = [];
+        let filteredTrips = [];
+        let activeRegions = new Set();
+        let activeMonths = new Set();
+        let regions = new Set();
+        let months = new Set();
+
+        // CORS proxy options
+        const corsProxies = [
+            'https://api.allorigins.win/get?url=',
+            'https://corsproxy.io/?',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://proxy.cors.sh/'
+        ];
+
+        // Parse CSV data
+        function parseCSV(csvString) {
+            const lines = csvString.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const row = {};
+                const values = lines[i].split(',');
+                headers.forEach((header, index) => {
+                    row[header] = values[index];
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
+        // Fetch data with CORS proxy
+        async function fetchWithProxy(url, proxyIndex = 0) {
+            if (proxyIndex >= corsProxies.length) {
+                throw new Error('All CORS proxies failed');
+            }
+
+            const proxy = corsProxies[proxyIndex];
+            let proxyUrl;
+            
+            if (proxy.includes('allorigins.win')) {
+                proxyUrl = proxy + encodeURIComponent(url);
+            } else {
+                proxyUrl = proxy + url;
+            }
+
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                let text;
+                if (proxy.includes('allorigins.win')) {
+                    const json = await response.json();
+                    text = json.contents;
+                } else {
+                    text = await response.text();
+                }
+                return text;
+            } catch (error) {
+                console.warn(`Proxy ${proxy} failed for ${url}:`, error);
+                return fetchWithProxy(url, proxyIndex + 1);
+            }
+        }
+
+        // Extract trip details from HTML
+        function extractTripDetails(html, tripTitle, url) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            let dates = 'TBD';
+            let price = 'Contact for pricing';
+            let duration = 'TBD';
+            let region = inferRegionFromTitle(tripTitle);
+
+            // Try different selectors for dates
+            const dateSelectors = [
+                '.trip-dates', '.dates', '.trip-date', '[class*="date"]',
+                '.departure', '[class*="departure"]', '.schedule',
+                'p, div, span'
+            ];
+
+            for (const selector of dateSelectors) {
+                const elements = doc.querySelectorAll(selector);
+                for (const element of elements) {
+                    const text = element.textContent.toLowerCase();
+                    
+                    // Look for date patterns
+                    const datePattern = /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}[\s,]*\d{4}/i;
+                    const rangePattern = /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}[\s-–]+\d{1,2}[\s,]*\d{4}/i;
+                    
+                    if (rangePattern.test(text)) {
+                        dates = element.textContent.trim();
+                        break;
+                    } else if (datePattern.test(text)) {
+                        dates = element.textContent.trim();
+                    }
+                }
+                if (dates !== 'TBD') break;
+            }
+
+            // Try to extract price
+            const priceSelectors = [
+                '.price', '.cost', '[class*="price"]', '[class*="cost"]', 'p, div, span'
+            ];
+
+            for (const selector of priceSelectors) {
+                const elements = doc.querySelectorAll(selector);
+                for (const element of elements) {
+                    const text = element.textContent;
+                    if (text.match(/\$[\d,]+/) || text.toLowerCase().includes('from $')) {
+                        price = element.textContent.trim();
+                        break;
+                    }
+                }
+                if (price !== 'Contact for pricing') break;
+            }
+
+            // Try to extract duration
+            const durationSelectors = [
+                '.duration', '.days', '[class*="duration"]', '[class*="days"]', 'p, div, span'
+            ];
+
+            for (const selector of durationSelectors) {
+                const elements = doc.querySelectorAll(selector);
+                for (const element of elements) {
+                    const text = element.textContent.toLowerCase();
+                    if (text.match(/\d+\s*(day|night)/)) {
+                        duration = element.textContent.trim();
+                        break;
+                    }
+                }
+                if (duration !== 'TBD') break;
+            }
+
+            return { dates, price, duration, region };
+        }
+
+        // Infer region from trip title
+        function inferRegionFromTitle(title) {
+            const regionMap = {
+                // Europe
+                'scotland': 'Northern Europe', 'scandinavia': 'Northern Europe', 'iceland': 'Northern Europe', 'norway': 'Northern Europe',
+                'portugal': 'Southern Europe', 'puglia': 'Southern Europe', 'italy': 'Southern Europe', 'tuscany': 'Southern Europe', 'sicily': 'Southern Europe',
+                'greece': 'Southern Europe', 'croatia': 'Southern Europe', 'turkey': 'Southern Europe',
+                'poland': 'Central Europe', 'danube': 'Central Europe', 'rhine': 'Central Europe', 'christmas markets': 'Central Europe',
+                'ireland': 'Western Europe',
+                
+                // Asia
+                'india': 'South Asia', 'nepal': 'South Asia', 'sri lanka': 'South Asia', 'rajasthan': 'South Asia',
+                'japan': 'East Asia', 'vietnam': 'Southeast Asia', 'cambodia': 'Southeast Asia', 'thailand': 'Southeast Asia',
+                'kyrgyzstan': 'Central Asia', 'tajikistan': 'Central Asia', 'uzbekistan': 'Central Asia',
+                'israel': 'Middle East', 'palestine': 'Middle East', 'jordan': 'Middle East', 'egypt': 'Middle East',
+                
+                // Africa
+                'morocco': 'North Africa',
+                'botswana': 'Southern Africa', 'south africa': 'Southern Africa',
+                'kenya': 'East Africa', 'tanzania': 'East Africa', 'uganda': 'East Africa',
+                'madagascar': 'East Africa',
+                
+                // Americas
+                'canada': 'North America', 'rocky mountain': 'North America', 'coast to coast': 'North America',
+                'mexico': 'North America', 'costa rica': 'Central America',
+                'cuba': 'Caribbean',
+                'amazon': 'South America', 'chile': 'South America', 'patagonia': 'South America', 'peru': 'South America',
+                
+                // Oceania
+                'new zealand': 'Oceania', 'tasmania': 'Oceania',
+                
+                // Other
+                'galapagos': 'Pacific Islands'
+            };
+
+            const lowerTitle = title.toLowerCase();
+            for (const [keyword, region] of Object.entries(regionMap)) {
+                if (lowerTitle.includes(keyword)) {
+                    return region;
+                }
+            }
+            return 'Other';
+        }
+
+        // Extract month from date string
+        function extractMonth(dateStr) {
+            const months = ['january', 'february', 'march', 'april', 'may', 'june',
+                          'july', 'august', 'september', 'october', 'november', 'december'];
+            const monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                               'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            
+            const lowerDate = dateStr.toLowerCase();
+            for (let i = 0; i < months.length; i++) {
+                if (lowerDate.includes(months[i]) || lowerDate.includes(monthsShort[i])) {
+                    return months[i].charAt(0).toUpperCase() + months[i].slice(1);
+                }
+            }
+            return 'TBD';
+        }
+
+        // Parse date for sorting
+        function parseDate(dateStr) {
+            if (dateStr === 'TBD') return new Date(2099, 11, 31); // Far future for TBD dates
+            
+            const monthMap = {
+                'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+                'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+            };
+            
+            const dateMatch = dateStr.toLowerCase().match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})[\s,]*(\d{4})/);
+            if (dateMatch) {
+                const month = monthMap[dateMatch[1]];
+                const day = parseInt(dateMatch[2]);
+                const year = parseInt(dateMatch[3]);
+                return new Date(year, month, day);
+            }
+            
+            return new Date(2099, 11, 31);
+        }
+
+        // Load and process all trip data
+        async function loadTripData() {
+            const rawData = parseCSV(csvData);
+            allTrips = [];
+
+            for (let i = 0; i < rawData.length; i++) {
+                const trip = rawData[i];
+                const loadingMsg = document.getElementById('loadingMessage');
+                loadingMsg.textContent = `Loading trip ${i + 1} of ${rawData.length}: ${trip['Trip Title (as on site)']}...`;
+
+                try {
+                    const html = await fetchWithProxy(trip['Official Trip URL']);
+                    const details = extractTripDetails(html, trip['Trip Title (as on site)'], trip['Official Trip URL']);
+                    
+                    const processedTrip = {
+                        title: trip['Trip Title (as on site)'],
+                        institution: trip['Institution'],
+                        url: trip['Official Trip URL'],
+                        dates: details.dates,
+                        price: details.price,
+                        duration: details.duration,
+                        region: details.region,
+                        month: extractMonth(details.dates),
+                        sortDate: parseDate(details.dates)
+                    };
+
+                    allTrips.push(processedTrip);
+                    regions.add(processedTrip.region);
+                    months.add(processedTrip.month);
+
+                    // Add a small delay to be respectful to servers
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                } catch (error) {
+                    console.error(`Failed to fetch data for ${trip['Trip Title (as on site)']}:`, error);
+                    
+                    // Add trip with minimal data if fetch fails
+                    const fallbackTrip = {
+                        title: trip['Trip Title (as on site)'],
+                        institution: trip['Institution'],
+                        url: trip['Official Trip URL'],
+                        dates: 'TBD',
+                        price: 'Contact for pricing',
+                        duration: 'TBD',
+                        region: inferRegionFromTitle(trip['Trip Title (as on site)']),
+                        month: 'TBD',
+                        sortDate: new Date(2099, 11, 31)
+                    };
+
+                    allTrips.push(fallbackTrip);
+                    regions.add(fallbackTrip.region);
+                    months.add(fallbackTrip.month);
+                }
+            }
+
+            // Sort trips chronologically
+            allTrips.sort((a, b) => a.sortDate - b.sortDate);
+            filteredTrips = [...allTrips];
+
+            // Hide loading message and show content
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // Initialize UI
+            createRegionTiles();
+            createFilters();
+            updateDisplay();
+        }
+
+        // Create region tiles
+        function createRegionTiles() {
+            const container = document.getElementById('regionTiles');
+            const sortedRegions = Array.from(regions).sort();
+            
+            sortedRegions.forEach(region => {
+                const tile = document.createElement('div');
+                tile.className = 'region-tile';
+                tile.textContent = region;
+                tile.onclick = () => toggleRegionFilter(region);
+                container.appendChild(tile);
+            });
+        }
+
+        // Create filter elements
+        function createFilters() {
+            createRegionFilters();
+            createMonthFilters();
+        }
+
+        function createRegionFilters() {
+            const container = document.getElementById('regionFilters');
+            const sortedRegions = Array.from(regions).sort();
+            
+            sortedRegions.forEach(region => {
+                const tag = document.createElement('div');
+                tag.className = 'filter-tag';
+                tag.textContent = region;
+                tag.onclick = () => toggleRegionFilter(region);
+                container.appendChild(tag);
+            });
+        }
+
+        function createMonthFilters() {
+            const container = document.getElementById('monthFilters');
+            const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December', 'TBD'];
+            const sortedMonths = Array.from(months).sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+            
+            sortedMonths.forEach(month => {
+                const tag = document.createElement('div');
+                tag.className = 'filter-tag';
+                tag.textContent = month;
+                tag.onclick = () => toggleMonthFilter(month);
+                container.appendChild(tag);
+            });
+        }
+
+        // Filter functions
+        function toggleRegionFilter(region) {
+            if (activeRegions.has(region)) {
+                activeRegions.delete(region);
+            } else {
+                activeRegions.add(region);
+            }
+            updateFilters();
+        }
+
+        function toggleMonthFilter(month) {
+            if (activeMonths.has(month)) {
+                activeMonths.delete(month);
+            } else {
+                activeMonths.add(month);
+            }
+            updateFilters();
+        }
+
+        function clearAllFilters() {
+            activeRegions.clear();
+            activeMonths.clear();
+            updateFilters();
+        }
+
+        function updateFilters() {
+            // Update visual state
+            document.querySelectorAll('.region-tile').forEach(tile => {
+                tile.classList.toggle('active', activeRegions.has(tile.textContent));
+            });
+            
+            document.querySelectorAll('#regionFilters .filter-tag').forEach(tag => {
+                tag.classList.toggle('active', activeRegions.has(tag.textContent));
+            });
+            
+            document.querySelectorAll('#monthFilters .filter-tag').forEach(tag => {
+                tag.classList.toggle('active', activeMonths.has(tag.textContent));
+            });
+
+            // Apply filters
+            filteredTrips = allTrips.filter(trip => {
+                const regionMatch = activeRegions.size === 0 || activeRegions.has(trip.region);
+                const monthMatch = activeMonths.size === 0 || activeMonths.has(trip.month);
+                return regionMatch && monthMatch;
+            });
+
+            updateDisplay();
+        }
+
+        // Update display
+        function updateDisplay() {
+            const resultsInfo = document.getElementById('resultsInfo');
+            const tripsGrid = document.getElementById('tripsGrid');
+
+            resultsInfo.textContent = `Showing ${filteredTrips.length} of ${allTrips.length} trips`;
+
+            tripsGrid.innerHTML = '';
+            filteredTrips.forEach(trip => {
+                const card = createTripCard(trip);
+                tripsGrid.appendChild(card);
+            });
+        }
+
+        // Create trip card
+        function createTripCard(trip) {
+            const card = document.createElement('div');
+            card.className = `trip-card ${trip.institution.toLowerCase()}`;
+            
+            card.innerHTML = `
+                <div class="trip-title">${trip.title}</div>
+                <div class="trip-institution">${trip.institution} Alumni Travel</div>
+                <div class="trip-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Dates:</span>
+                        <span class="detail-value">${trip.dates}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value">${trip.duration}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Region:</span>
+                        <span class="detail-value">${trip.region}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Price:</span>
+                        <span class="detail-value">${trip.price}</span>
+                    </div>
+                </div>
+                <a href="${trip.url}" target="_blank" class="trip-link">View Details</a>
+            `;
+            
+            return card;
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', loadTripData);
+    </script>
+</body>
+</html>
